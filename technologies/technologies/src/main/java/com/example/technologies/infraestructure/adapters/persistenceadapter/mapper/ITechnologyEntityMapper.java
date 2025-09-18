@@ -7,13 +7,9 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface ITechnologyEntityMapper {
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "name", source = "name")
-    @Mapping(target = "description", source = "description")
+    @Mapping(source = "id", target = "id")
+    @Mapping(source = "name", target = "name")
+    @Mapping(source = "description", target = "description")
     Technology toModel(TechnologyEntity entity);
-
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "name", source = "name")
-    @Mapping(target = "description", source = "description")
     TechnologyEntity toEntity(Technology technology);
 }

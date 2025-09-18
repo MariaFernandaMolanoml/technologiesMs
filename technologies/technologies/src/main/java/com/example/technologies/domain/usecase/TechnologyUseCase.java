@@ -6,7 +6,11 @@ import com.example.technologies.domain.enums.Message;
 import com.example.technologies.domain.exceptions.DomainException;
 import com.example.technologies.domain.model.Technology;
 import com.example.technologies.domain.spi.ITechnologyPersistencePort;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
+import java.util.UUID;
 
 public class TechnologyUseCase implements ITechnologyServicePort {
 
@@ -35,6 +39,10 @@ public class TechnologyUseCase implements ITechnologyServicePort {
                 );
     }
 
+    @Override
+    public Flux<Technology> findByIds(List<UUID> ids) {
+        return persistencePort.findByIds(ids);
+    }
 
     private Mono<Technology> validateTechnologyFields(Technology technology) {
         if (technology.name() == null || technology.name().isBlank()) {
@@ -50,5 +58,9 @@ public class TechnologyUseCase implements ITechnologyServicePort {
             return Mono.error(new DomainException(Message.DESCRIPTION_TOO_LONG));
         }
         return Mono.just(technology);
+    }
+    @Override
+    public Mono<Technology> findById(UUID id) {
+        return persistencePort.findById(id);
     }
 }
