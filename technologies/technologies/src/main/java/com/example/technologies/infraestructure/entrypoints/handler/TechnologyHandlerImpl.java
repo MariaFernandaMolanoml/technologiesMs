@@ -33,7 +33,7 @@ public class TechnologyHandlerImpl {
         return request.bodyToMono(TechnologyDTO.class)
                 .flatMap(dto -> servicePort.registerTechnology(mapper.dtoToModel(dto)))
                 .flatMap(saved -> ServerResponse.status(HttpStatus.CREATED)
-                        .bodyValue(Message.TECHNOLOGY_CREATED.getMessage()))
+                        .bodyValue(mapper.modelToDto(saved)))
                 .doOnSuccess(success -> log.info("Technology created successfully"))
                 .doOnError(ex -> log.error(TECHNOLOGY_ERROR, ex))
                 .onErrorResume(DomainException.class, ex -> buildErrorResponse(
@@ -82,7 +82,15 @@ public class TechnologyHandlerImpl {
         UUID id = UUID.fromString(request.pathVariable("id"));
         return servicePort.findById(id)
                 .flatMap(tech -> ServerResponse.ok().bodyValue(tech))
-                .switchIfEmpty(ServerResponse.notFound().build())
+                .switchIfEmpty(buildErrorResponse(
+                        HttpStatus.NOT_FOUND,
+                        "Tecnología no encontrada con id " + id,
+                        List.of(ErrorDTO.builder()
+                                .code("NOT_FOUND")
+                                .message("La tecnología con el id especificado no existe")
+                                .param(id.toString())
+                                .build())
+                ))
                 .doOnSuccess(success -> log.info("Fetched technology with id {}", id))
                 .doOnError(ex -> log.error(TECHNOLOGY_ERROR, ex))
                 .onErrorResume(ex -> buildErrorResponse(
@@ -93,4 +101,5 @@ public class TechnologyHandlerImpl {
                                 .message(Message.INTERNAL_ERROR.getMessage())
                                 .build())));
     }
+
 }
