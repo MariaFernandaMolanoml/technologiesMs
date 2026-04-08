@@ -5,7 +5,11 @@ import com.example.technologies.domain.spi.ITechnologyPersistencePort;
 import com.example.technologies.infraestructure.adapters.persistenceadapter.mapper.ITechnologyEntityMapper;
 import com.example.technologies.infraestructure.adapters.persistenceadapter.repository.TechnologyRepository;
 import lombok.AllArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
+import java.util.UUID;
 
 @AllArgsConstructor
 public class TechnologyPersistenceAdapter implements ITechnologyPersistencePort {
@@ -25,6 +29,16 @@ public class TechnologyPersistenceAdapter implements ITechnologyPersistencePort 
                 .map(technologyEntityMapper::toModel)
                 .map(t -> true)
                 .defaultIfEmpty(false);
+    }
+    @Override
+    public Flux<Technology> findByIds(List<UUID> ids) {
+        return technologyRepository.findAllById(ids)
+                .map(technologyEntityMapper::toModel);
+    }
+    @Override
+    public Mono<Technology> findById(UUID id) {
+        return technologyRepository.findById(id)
+                .map(technologyEntityMapper::toModel);
     }
 
 }

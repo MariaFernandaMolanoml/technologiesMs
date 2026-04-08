@@ -16,10 +16,8 @@ import java.util.UUID;
 public class TechnologyEntity {
     @Id
     private UUID id;
-
     @Column("name")
     private String name;
-
     @Column("description")
     private String description;
 }

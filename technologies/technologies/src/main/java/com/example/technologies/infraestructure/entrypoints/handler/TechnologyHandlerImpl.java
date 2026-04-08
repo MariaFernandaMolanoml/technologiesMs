@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import static com.example.technologies.infraestructure.entrypoints.util.Constants.TECHNOLOGY_ERROR;
 
@@ -32,7 +33,7 @@ public class TechnologyHandlerImpl {
         return request.bodyToMono(TechnologyDTO.class)
                 .flatMap(dto -> servicePort.registerTechnology(mapper.dtoToModel(dto)))
                 .flatMap(saved -> ServerResponse.status(HttpStatus.CREATED)
-                        .bodyValue(Message.TECHNOLOGY_CREATED.getMessage()))
+                        .bodyValue(mapper.modelToDto(saved)))
                 .doOnSuccess(success -> log.info("Technology created successfully"))
                 .doOnError(ex -> log.error(TECHNOLOGY_ERROR, ex))
                 .onErrorResume(DomainException.class, ex -> buildErrorResponse(
@@ -52,6 +53,22 @@ public class TechnologyHandlerImpl {
                                 .build())));
     }
 
+    public Mono<ServerResponse> validateTechnologies(ServerRequest request) {
+        return request.bodyToFlux(UUID.class)
+                .collectList()
+                .flatMapMany(servicePort::findByIds)
+                .collectList()
+                .flatMap(techs -> ServerResponse.ok().bodyValue(techs))
+                .doOnSuccess(success -> log.info("Validated technologies successfully"))
+                .doOnError(ex -> log.error(TECHNOLOGY_ERROR, ex))
+                .onErrorResume(ex -> buildErrorResponse(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        Message.INTERNAL_ERROR.getMessage(),
+                        List.of(ErrorDTO.builder()
+                                .code(Message.INTERNAL_ERROR.getCode())
+                                .message(Message.INTERNAL_ERROR.getMessage())
+                                .build())));
+    }
     private Mono<ServerResponse> buildErrorResponse(HttpStatus status, String message, List<ErrorDTO> errors) {
         ApiResponse response = ApiResponse.builder()
                 .code(String.valueOf(status.value()))
@@ -61,4 +78,28 @@ public class TechnologyHandlerImpl {
                 .build();
         return ServerResponse.status(status).bodyValue(response);
     }
+    public Mono<ServerResponse> getTechnologyById(ServerRequest request) {
+        UUID id = UUID.fromString(request.pathVariable("id"));
+        return servicePort.findById(id)
+                .flatMap(tech -> ServerResponse.ok().bodyValue(tech))
+                .switchIfEmpty(buildErrorResponse(
+                        HttpStatus.NOT_FOUND,
+                        "Tecnología no encontrada con id " + id,
+                        List.of(ErrorDTO.builder()
+                                .code("NOT_FOUND")
+                                .message("La tecnología con el id especificado no existe")
+                                .param(id.toString())
+                                .build())
+                ))
+                .doOnSuccess(success -> log.info("Fetched technology with id {}", id))
+                .doOnError(ex -> log.error(TECHNOLOGY_ERROR, ex))
+                .onErrorResume(ex -> buildErrorResponse(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        Message.INTERNAL_ERROR.getMessage(),
+                        List.of(ErrorDTO.builder()
+                                .code(Message.INTERNAL_ERROR.getCode())
+                                .message(Message.INTERNAL_ERROR.getMessage())
+                                .build())));
+    }
+
 }
